@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Extensiv APP</title>
+<!--    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include the date picker library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+    <!-- Add the select2 library and its CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+</head>
+
+<style>
+  .container {
+    display: flex;
+    flex-direction: row;
+      align-items: flex-start;
+  }
+
+  .header {
+    text-align: left;
+    margin-top: 30px;
+  }
+
+  #fetchButton {
+    padding: 15px 30px;
+    font-size: 20px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+      margin-top: 50px;
+  }
+
+  #clicked{
+    padding: 10px 20px;
+    font-size: 15px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+      margin-left: 60px;
+  }
+
+  .input-section {
+    text-align: left;
+    margin-top: 50px;
+      font-family: Helvetica, Arial,serif;
+  }
+
+  .show-data {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    margin-top: 30px;
+      font-family: Helvetica, Arial,serif;
+  }
+
+  .box {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-family: Helvetica, Arial,serif;
+      border-radius: 10px;
+  }
+
+  .chart-container {
+    margin-left: 30px;
+    margin-top: 30px;
+    width: 600px;
+      height: 250px;
+  }
+
+  .picked-container{
+      margin-left: 30px;
+    margin-top: 30px;
+    width: 600px;
+      height: 250px;
+  }
+
+   .avg-container{
+      margin-left: 30px;
+    margin-top: 30px;
+    width: 600px;
+      height: 250px;
+  }
+
+  .chart-picked-container {
+    position: relative;
+      font-family: Helvetica, Arial,serif;
+  }
+
+  #start-date {
+    margin-right: 10px;
+  }
+
+  #endDate {
+    position: absolute;
+    left: 45%;
+    top: 0;
+  }
+  #submit-chart{
+      position: absolute;
+    left: 85%;
+    top: 0;
+      margin-top: 15px;
+      padding: 7px 15px;
+    font-size: 10px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  #avgBox{
+      background-color: maroon;
+  }
+
+  button:hover {
+    background-color: maroon !important;
+  }
+
+
+</style>
+
+
+
+
+
+
+<script>
+    // Define currentAjaxRequest at the global level
+        var currentAjaxRequest = null;
+        var myChart = null;
+        var myChart1 = null;
+        var myChart2 = null;
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+      Chart.plugins.register({
+    beforeLayout: function (chart) {
+      if (chart.options.scales) {
+        chart.options.scales.yAxes.forEach(function (yAxis) {
+          yAxis.ticks.min = 0;
+        });
+      }
+    }
+  });
+
+   $(document).ready(function () {
+    console.log("Initializing select2 multi-select dropdowns...");
+    $(".multi-select-dropdown").select2();
+});
+
+
+    $(document).ready(function () {
+function populatePersonNames() {
+        $.ajax({
+            url: "/person",
+            type: "GET"
+        }).done(function (response) {
+            console.log(response);
+            var dropdown = $("#person");
+            dropdown.empty();  // Clear existing dropdown options
+
+            $.each(response, function (index, clientName) {
+                dropdown.append($('<option></option>').text(clientName));
+            });
+
+            // Initialize the select2 library after populating the dropdown
+            dropdown.select2();
+        });
+    }
+
+    // Function to populate client names in the dropdown
+    function populateClientNames() {
+        $.ajax({
+            url: "/client",
+            type: "GET"
+        }).done(function (response) {
+            console.log(response);
+            var dropdown = $("#client");
+            dropdown.empty();  // Clear existing dropdown options
+
+            $.each(response, function (index, clientName) {
+                dropdown.append($('<option></option>').text(clientName));
+            });
+
+            // Initialize the select2 library after populating the dropdown
+            dropdown.select2();
+        });
+    }
+
+    // Call the functions after the DOM is ready
+    populatePersonNames();
+    populateClientNames();
+
+        $(document).ready(function() {
+    function fetchDataAndDisplay() {
+        $.ajax({
+            url: "/fetchTime",
+            type: "GET",
+            success: function(response) {
+                // Update the dataContainer with the received data
+                $("#last-fetch").text("Last fetch time: " + response);
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching data:", error);
+            }
+            });
+        }
+
+        // Call the fetchDataAndDisplay function when the page is ready (on initial load)
+        fetchDataAndDisplay();
+
+        // Call the fetchDataAndDisplay function every hour to refresh the data
+        setInterval(fetchDataAndDisplay, 3600200); // 3600000 milliseconds = 1 hour
+    });
+
+
+
+          // Initialize the date picker
+       flatpickr("#selectedDate", {
+          dateFormat: "Y-m-d", // Format the date as "Month Day, Year"
+           defaultDate: new Date().fp_incr(-7),
+          minDate: new Date().setMonth(new Date().getMonth() - 3), // Set the minimum date to the same date of the last month
+          // Additional configuration options for the date picker can be added here
+        });
+
+       flatpickr("#endSelectedDate", {
+          dateFormat: "Y-m-d", // Format the date as "Month Day, Year"
+          minDate: new Date().setMonth(new Date().getMonth() - 1), // Set the minimum date to the same date of the last month
+          defaultDate: "today",// Additional configuration options for the date picker can be added here
+        });
+
+       flatpickr("#start-date", {
+          dateFormat: "Y-m-d", // Format the date as "Month Day, Year"
+           defaultDate: new Date().fp_incr(-7),
+          minDate: new Date().setMonth(new Date().getMonth() - 1), // Set the minimum date to the same date of the last month
+          // Additional configuration options for the date picker can be added here
+        });
+
+       flatpickr("#end-date", {
+          dateFormat: "Y-m-d", // Format the date as "Month Day, Year"
+           defaultDate: "today",
+          minDate: new Date().setMonth(new Date().getMonth() - 1), // Set the minimum date to the same date of the last month
+          // Additional configuration options for the date picker can be added here
+        });
+
+       $(document).ready(function () {
+          loadCreatedProductChartData();
+          loadPickedProductChartData();
+          loadAveragePickingPerDayData();
+        });
+
+        function myFunction() {
+            showLoadingIndicator();
+          var selectedPersonNames = $('#person').val();
+          var selectedClientNames = $('#client').val();
+          var selectedDate = $('#selectedDate').val();
+          var endSelectedDate = $('#endSelectedDate').val();
+
+          var requestData = {
+                personName: selectedPersonNames,
+                clientName: selectedClientNames,
+                selectedDate: selectedDate,
+                endSelectedDate: endSelectedDate
+              };
+
+          $.ajax({
+            url: "/getResults",
+            type: "POST",
+            contentType: "application/json", // Set the content type to JSON
+            dataType: "json", // Expect JSON data in response
+            data: JSON.stringify(requestData),
+          }).done(function (response) {
+            var result = response.result;
+            $(".show-data").empty(); // Clear previous results
+
+            // Create the HTML structure for the data display
+            var html = '<div class="data-box">';
+            html += '<div class="centered-text">' + result.personName + '</div>';
+            html += '<div class="centered-text">' + result.clientName + '</div>';
+
+            html += '<div class="box">';
+            html += '<p>' + result.createdProducts + '</p>';
+            html += '</div>';
+
+            html += '<div class="box">';
+            html += '<p>' + result.pickedProducts + '</p>';
+            html += '</div>';
+
+            html += '<div class="box" id="avgBox">';
+            html += '<p>' + result.averagePickingTime + '</p>';
+            html += '</div>';
+
+            html += '</div>';
+            hideLoadingIndicator();
+            $(".show-data").html(html); // Replace with new results
+          });
+        }
+
+
+        function fetchData() {
+            // Disable the "Fetch New Data" button
+            $("#fetchButton").prop("disabled", true);
+
+            // Display a pop-up message using SweetAlert
+            var loadingPopup = Swal.fire({
+                title: 'Fetching Data',
+                text: 'Started fetching...',
+                icon: 'info',
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: "/fetch_data",
+                type: "GET",
+                timeout: 1000000, // Set a timeout for the API request (in milliseconds)
+                success: function (response) {
+                    console.log(response);
+                    loadingPopup.close(); // Close the loading pop-up
+                    // Handle the successful response as needed
+                    // ...
+
+                    // Display the response message in a new pop-up
+                    Swal.fire({
+                        title: 'Fetch Result',
+                        text: response,
+                        icon: 'success',
+                        timer: 5000, // Display the pop-up for 5 seconds
+                        showConfirmButton: false
+                    });
+
+
+                    // Check if the response is "Successfully Fetched"
+                    if (response === "Data Successfully Fetched...") {
+                        // Reload the page after 5 seconds
+                        setTimeout(function() {
+                            location.reload();
+                        }, 5000);
+                    }
+                    // Re-enable the "Fetch New Data" button
+                    $("#fetchButton").prop("disabled", false);
+                },
+                error: function (error) {
+                    console.log(error);
+                    loadingPopup.close(); // Close the loading pop-up
+
+                    // Display an error message in a pop-up
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to fetch data. Please try again.',
+                        icon: 'error',
+                        timer: 5000, // Display the pop-up for 5 seconds
+                        showConfirmButton: false
+                    });
+
+                    // Re-enable the "Fetch New Data" button
+                    $("#fetchButton").prop("disabled", false);
+                }
+            });
+        }
+
+        $("#fetchButton").click(function (){
+            fetchData();
+        })
+
+        $("#clicked").click(function () {
+            myFunction();
+        });
+
+        setInterval(fetchData, 3600000);
+
+
+        function showLoadingIndicator() {
+        // Display a loading indicator
+          $(".show-data").html("<div class='loading-indicator'>Loading...</div>");
+        }
+
+        function hideLoadingIndicator() {
+          // Hide the loading indicator
+          $(".show-data").empty();
+        }
+
+
+
+        async function loadCreatedProductChartData() {
+            showLoadingIndicator();
+            var selectedPersonNames = $('#person').val();
+          var selectedClientNames = $('#client').val();
+          var selectedDate = $('#selectedDate').val();
+          var endSelectedDate = $('#endSelectedDate').val();
+
+          var requestData = {
+                personName: selectedPersonNames,
+                clientName: selectedClientNames,
+                selectedDate: selectedDate,
+                endSelectedDate: endSelectedDate
+              };
+
+            // Abort the previous AJAX request if it exists
+            if (currentAjaxRequest) {
+                currentAjaxRequest.abort();
+            }
+
+            // Wrap the AJAX call in a Promise
+            const getDataPromise = new Promise((resolve, reject) => {
+                currentAjaxRequest = $.ajax({
+                    url: "productsCreatedLastSevenDays",
+                    type: "POST",
+                    contentType: "application/json", // Set the content type to JSON
+                    dataType: "json", // Expect JSON data in response
+                    data: JSON.stringify(requestData),
+                    success: function (response) {
+                        resolve(response);
+                    },
+                    error: function (error) {
+                        reject(error);
+                    },
+                    complete: function () {
+                        currentAjaxRequest = null;
+                    },
+                    cache: false,
+                });
+            });
+
+            try {
+                const response = await getDataPromise;
+                // Process the response and update the chart
+                console.log(response);
+                var apiData = response;
+                var chartData = {};
+                var dates = [];
+                var totalOrders = [];
+
+                apiData.forEach(function (item) {
+                    dates.push(item.date);
+                    totalOrders.push(item.total_orders);
+                });
+                hideLoadingIndicator();
+
+                chartData = {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Total Products Created',
+                        data: totalOrders,
+                        backgroundColor: 'rgba(155,2,2,0.5)',
+                        borderColor: 'rgb(133,1,1)',
+                        borderWidth: 2
+                    }]
+                };
+
+                var chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            suggestedMin: 0,
+                            beginAtZero: true
+                        }
+                    }
+                };
+
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                var ctx = document.getElementById('bar-chart').getContext('2d');
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions
+                });
+            } catch (error) {
+                console.log(error);
+                hideLoadingIndicator();
+                // Display an error message
+                $(".show-data").html("Failed to fetch data. Please try again.");
+            }
+        }
+
+
+
+        function loadPickedProductChartData() {
+            showLoadingIndicator();
+             var selectedPersonNames = $('#person').val();
+          var selectedClientNames = $('#client').val();
+          var selectedDate = $('#selectedDate').val();
+          var endSelectedDate = $('#endSelectedDate').val();
+
+          var requestData = {
+                personName: selectedPersonNames,
+                clientName: selectedClientNames,
+                selectedDate: selectedDate,
+                endSelectedDate: endSelectedDate
+              };
+        $.ajax({
+            url: "/productsPickedLastSevenDays",
+            type: "POST",
+            contentType: "application/json", // Set the content type to JSON
+            dataType: "json", // Expect JSON data in response
+            data: JSON.stringify(requestData),
+            success: function (response) {
+                console.log(response);
+                var apiData = response;
+
+                var dates = [];
+                var totalOrders = [];
+
+                apiData.forEach(function (item) {
+                    dates.push(item.date);
+                    totalOrders.push(item.total_orders);
+                });
+                hideLoadingIndicator();
+                var chartData = {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Total Products Picked',
+                        data: totalOrders,
+                        backgroundColor: 'rgba(155,2,2,0.5)',
+                        borderColor: 'rgb(133,1,1)',
+                        borderWidth: 2
+                    }]
+                };
+
+                var chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            suggestedMin: 0,
+                            beginAtZero: true
+                        }
+                    }
+                };
+
+                if (myChart1) {
+                    myChart1.destroy();
+                }
+
+                var ctx = document.getElementById('pick-chart').getContext('2d');
+                myChart1 = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions
+                });
+            },
+            error: function (error) {
+                console.log(error);
+                hideLoadingIndicator();
+                // Display an error message
+                $(".show-data").html("Failed to fetch data. Please try again.");
+            }
+        });
+    }
+
+        function loadAveragePickingPerDayData() {
+            showLoadingIndicator();
+            var selectedPersonNames = $('#person').val();
+          var selectedClientNames = $('#client').val();
+          var selectedDate = $('#selectedDate').val();
+          var endSelectedDate = $('#endSelectedDate').val();
+
+          var requestData = {
+                personName: selectedPersonNames,
+                clientName: selectedClientNames,
+                selectedDate: selectedDate,
+                endSelectedDate: endSelectedDate
+              };
+        $.ajax({
+            url: "/fetchAveragePickingTime",
+            type: "POST",
+            contentType: "application/json", // Set the content type to JSON
+            dataType: "json", // Expect JSON data in response
+            data: JSON.stringify(requestData),
+            success: function (response) {
+                console.log(response);
+                var apiData = response;
+
+                var dates = [];
+                var avgTime = [];
+
+                apiData.forEach(function (item) {
+                    dates.push(item.date);
+                    var time = item.avgTime < 0 ? 0 : item.avgTime;
+                    avgTime.push(time);
+                });
+                hideLoadingIndicator();
+                var chartData = {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Average Picking Time',
+                        data: avgTime,
+                        backgroundColor: 'rgba(155,2,2,0.5)',
+                        borderColor: 'rgb(133,1,1)',
+                        borderWidth: 2
+                    }]
+                };
+
+                var chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                    beginAtZero: true,
+                                    suggestedMin: 0, // Set the suggested minimum value of the y-axis to 0
+                                    min: 0
+                                }
+                        }
+                    }
+                };
+
+                if (myChart2) {
+                    myChart2.destroy();
+                }
+
+                var ctx = document.getElementById('avg-picking-chart').getContext('2d');
+                myChart2 = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions
+                });
+            },
+            error: function (error) {
+                console.log(error);
+                hideLoadingIndicator();
+                // Display an error message
+                $(".show-data").html("Failed to fetch data. Please try again.");
+            }
+        });
+    }
+
+
+
+
+        $("#clicked").click(function () {
+            loadCreatedProductChartData();
+            loadPickedProductChartData();
+            loadAveragePickingPerDayData();
+        });
+
+    });
+</script>
+
+<body>
+<div class="container">
+  <div class="header">
+      <div id="last-fetch">
+  </div>
+    <button id="fetchButton">Fetch New Data</button>
+  </div>
+    <div class="content">
+  <div class="input-section">
+            <p>
+        Person's Name
+        <select id="person" name="person" multiple class="multi-select-dropdown"></select>
+    </p>
+
+    <p>
+        Client's Name
+        <select id="client" name="client" multiple class="multi-select-dropdown"></select>
+    </p>
+
+    <p>
+      Start Date: <input type="text" id="selectedDate" name="selectedDate" readonly>
+    </p>
+      <p>
+      End Date: <input type="text" id="endSelectedDate" name="endSelectedDate" readonly>
+    </p>
+
+    <button id="clicked" onclick="myFunction()">Submit</button>
+  </div>
+  <div class="show-data">
+  </div>
+        </div>
+
+    <div class="chart-picked-container">
+<!--        <p>-->
+<!--      Start Date: <input type="text" id="start-date" name="start-date" readonly>-->
+<!--    </p>-->
+<!--        <p id="endDate">-->
+<!--      End Date: <input type="text" id="end-date" name="end-date" readonly>-->
+<!--    </p>-->
+<!--        <button id="submit-chart" onclick="loadCreatedProductChartData()">Submit</button>-->
+  <div class="chart-container">
+    <canvas id="bar-chart"></canvas>
+  </div>
+
+    <div class="picked-container">
+    <canvas id="pick-chart"></canvas></div>
+
+        <div class="avg-container">
+    <canvas id="avg-picking-chart"></canvas></div>
+</div>
+
+     </div>
+</body>
+
+
+</html>
